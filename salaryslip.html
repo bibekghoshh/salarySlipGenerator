@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pay Slip Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -471,45 +473,207 @@
                 document.getElementById('slipPreview').innerHTML = slipHTML;
             }
             
-            function downloadPDF() {
+            async function downloadPDF() {
                 const { jsPDF } = window.jspdf;
-                
-                // Generate the pay slip first to ensure we have the latest data
+
+                // Generate the pay slip first to ensure latest values are used
                 generatePaySlip();
-                
-                // Get the pay slip element
-                const slipElement = document.getElementById('slipPreview');
-                
-                // Get employee name and month/year for filename
-                const employeeName = document.getElementById('employeeName').value.replace(/\s+/g, '_');
-                const monthYear = (monthSelect.value + ' ' + yearSelect.value).replace(/\s+/g, '_');
-                const fileName = `${employeeName}_${monthYear}_Pay_Slip.pdf`;
-                
-                // Use html2canvas to capture the content
-                html2canvas(slipElement, {
-                    scale: 4, // High resolution for best quality
-                    backgroundColor: '#fff', // Ensure white background
-                    useCORS: true,
-                    logging: false,
-                    imageSmoothingEnabled: false // Disable smoothing for crisp lines
-                }).then(canvas => {
-                    // Convert canvas to image data
-                    const imgData = canvas.toDataURL('image/png');
-                    
-                    // Calculate PDF dimensions
-                    const imgWidth = 210; // A4 width in mm
-                    const pageHeight = 297; // A4 height in mm
-                    const imgHeight = canvas.height * imgWidth / canvas.width;
-                    
-                    // Create PDF
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    
-                    // Add image to PDF
-                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-                    
-                    // Download the PDF with dynamic filename
+
+                const slipElement = document.querySelector('#slipPreview .slip-container');
+                if (!slipElement) return;
+
+                const employeeNameRaw = document.getElementById('employeeName').value;
+                const monthYear = monthSelect.value + ' ' + yearSelect.value;
+                const employeeName = employeeNameRaw.replace(/\s+/g, '_');
+                const fileMonthYear = monthYear.replace(/\s+/g, '_');
+                const fileName = `${employeeName}_${fileMonthYear}_Pay_Slip.pdf`;
+
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = 'Generating...';
+
+                try {
+                    if (document.fonts && document.fonts.ready) {
+                        await document.fonts.ready;
+                    }
+
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'mm',
+                        format: 'a4',
+                        compress: true,
+                        precision: 16
+                    });
+
+                    const pageWidth = 210;
+                    const slipX = 15;
+                    const slipY = 12;
+                    const slipW = 180;
+                    const slipH = 273;
+                    const contentX = slipX + 2;
+                    const contentW = slipW - 4;
+                    let y = slipY + 3;
+
+                    pdf.setDrawColor(0);
+                    pdf.setLineWidth(0.1);
+                    pdf.rect(slipX, slipY, slipW, slipH);
+
+                    const logoEl = slipElement.querySelector('.logo-img');
+                    if (logoEl && logoEl.src) {
+                        const logoW = 32;
+                        const naturalW = logoEl.naturalWidth || 200;
+                        const naturalH = logoEl.naturalHeight || 47;
+                        const logoH = (logoW * naturalH) / naturalW;
+                        const logoX = contentX + contentW - logoW - 2;
+                        const logoY = y + 1;
+                        pdf.addImage(logoEl.src, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
+                    }
+
+                    const titleLabels = Array.from(slipElement.querySelectorAll('.company-details-title .title-name')).map((el) => el.textContent.trim());
+                    const companyName = (slipElement.querySelector('.company-name')?.textContent || '').trim();
+                    const companyAddress = (slipElement.querySelector('.company-address')?.textContent || '').trim();
+                    const labelX = contentX + 1.5;
+                    const valueX = contentX + 46;
+
+                    y += 10;
+                    pdf.setFont('times', 'normal');
+                    pdf.setFontSize(8.25);
+                    if (titleLabels[0]) pdf.text(titleLabels[0], labelX, y);
+                    pdf.setFont('times', 'bold');
+                    pdf.text(companyName, valueX, y);
+
+                    y += 6.2;
+                    pdf.setFont('times', 'normal');
+                    if (titleLabels[1]) pdf.text(titleLabels[1], labelX, y);
+                    const wrappedAddress = pdf.splitTextToSize(companyAddress, contentW - 50);
+                    pdf.text(wrappedAddress, valueX, y);
+                    y += wrappedAddress.length * 3.8 + 2.2;
+
+                    pdf.setFont('times', 'bold');
+                    pdf.setFontSize(9);
+                    pdf.setFillColor(189, 211, 244);
+                    pdf.rect(contentX, y - 3.2, contentW, 5.3, 'F');
+                    pdf.text((slipElement.querySelector('.pay-slip-title')?.textContent || '').trim(), pageWidth / 2, y, { align: 'center' });
+                    y += 4.2;
+
+                    const mapRow = (row) => Array.from(row.cells).map((cell) => {
+                        const isRight = cell.classList.contains('right');
+                        const isHeader = cell.tagName === 'TH';
+                        return {
+                            content: cell.textContent.replace(/\s+/g, ' ').trim(),
+                            styles: {
+                                fontStyle: isHeader ? 'bold' : 'normal',
+                                halign: isRight ? 'right' : 'center'
+                            }
+                        };
+                    });
+
+                    const infoTable = slipElement.querySelector('.info-table');
+                    const infoRows = Array.from(infoTable.rows).map(mapRow);
+                    pdf.autoTable({
+                        startY: y,
+                        theme: 'grid',
+                        body: infoRows,
+                        styles: {
+                            font: 'times',
+                            fontSize: 9.75,
+                            cellPadding: { top: 0.8, right: 1.4, bottom: 0.8, left: 1.4 },
+                            lineWidth: 0.1,
+                            lineColor: [0, 0, 0],
+                            textColor: [0, 0, 0],
+                            overflow: 'linebreak',
+                            valign: 'middle'
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 49.3 },
+                            1: { cellWidth: 38.7 },
+                            2: { cellWidth: 44.0 },
+                            3: { cellWidth: 44.0 }
+                        },
+                        tableWidth: contentW,
+                        margin: { left: contentX, right: pageWidth - (contentX + contentW) }
+                    });
+
+                    y = pdf.lastAutoTable.finalY + 2;
+
+                    const salaryTable = slipElement.querySelector('.salary-table');
+                    const salaryRows = Array.from(salaryTable.rows).map(mapRow);
+                    const salaryHead = [salaryRows[0]];
+                    const salaryBody = salaryRows.slice(1);
+                    pdf.autoTable({
+                        startY: y,
+                        theme: 'grid',
+                        head: salaryHead,
+                        body: salaryBody,
+                        headStyles: {
+                            fillColor: [242, 242, 242],
+                            textColor: [0, 0, 0],
+                            fontStyle: 'bold',
+                            lineWidth: 0.1
+                        },
+                        styles: {
+                            font: 'times',
+                            fontSize: 9,
+                            cellPadding: { top: 0.8, right: 1.0, bottom: 0.8, left: 1.0 },
+                            lineWidth: 0.1,
+                            lineColor: [0, 0, 0],
+                            textColor: [0, 0, 0]
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 56 },
+                            1: { cellWidth: 25, halign: 'right' },
+                            2: { cellWidth: 32, halign: 'right' },
+                            3: { cellWidth: 45 },
+                            4: { cellWidth: 18, halign: 'right' }
+                        },
+                        tableWidth: contentW,
+                        margin: { left: contentX, right: pageWidth - (contentX + contentW) },
+                        didParseCell: function(data) {
+                            const rowText = (data.row.raw || []).map((c) => c.content || '').join(' ');
+                            if (rowText.includes('Gross Salary') || rowText.includes('Net Salary')) {
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    });
+
+                    y = pdf.lastAutoTable.finalY + 5;
+
+                    pdf.setFont('times', 'normal');
+                    pdf.setFontSize(9.75);
+                    pdf.text((slipElement.querySelector('.footer p:first-child')?.textContent || 'With Regards').trim(), contentX + 1, y);
+                    y += 22;
+                    pdf.setFont('times', 'bold');
+                    pdf.text((slipElement.querySelector('.footer p:last-child')?.textContent || '(HR / Payroll - Manager)').trim(), contentX + 1, y);
+                    y += 9;
+
+                    const noticeEl = slipElement.querySelector('.notice');
+                    pdf.setFont('times', 'bold');
+                    pdf.setFontSize(7.5);
+                    const maxContentBottom = slipY + slipH - 2;
+                    const noticeBoxH = 18;
+                    if (y + noticeBoxH > maxContentBottom) {
+                        y = maxContentBottom - noticeBoxH;
+                    }
+                    pdf.setFillColor(249, 249, 249);
+                    pdf.rect(contentX, y - 2.5, contentW, noticeBoxH, 'F');
+                    pdf.setLineWidth(0.6);
+                    pdf.setDrawColor(204, 204, 204);
+                    pdf.line(contentX, y - 2.5, contentX, y - 2.5 + noticeBoxH);
+                    pdf.setDrawColor(0, 0, 0);
+                    pdf.setLineWidth(0.1);
+                    pdf.text('NOTICE:', contentX + 2, y + 1);
+                    pdf.setFont('times', 'normal');
+                    const noticeText = (noticeEl?.textContent || '').replace(/\s+/g, ' ').trim().replace(/^NOTICE:\s*/i, '');
+                    const wrappedNotice = pdf.splitTextToSize(noticeText, contentW - 4);
+                    pdf.text(wrappedNotice, contentX + 2, y + 4.1);
+
                     pdf.save(fileName);
-                });
+                } catch (error) {
+                    console.error('PDF generation failed:', error);
+                    alert('Failed to generate PDF. Please try again.');
+                } finally {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = 'Download as PDF';
+                }
             }
         });
     </script>
