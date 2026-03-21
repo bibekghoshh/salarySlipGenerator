@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Slip Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Leaprobots Pay Slip Generator</h1>
+        
+        <div class="form-container">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="monthYear">Pay Slip Month & Year</label>
+                    <input type="text" id="monthYear" value="MAY 2025">
+                </div>
+                <div class="form-group">
+                    <label for="companyName">Company Name</label>
+                    <input type="text" id="companyName" value="LEAP ROBOTS LLP">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="companyAddress">Company Address</label>
+                    <input type="text" id="companyAddress" value="Flat no 402, GSL residency, near JNTU, Sri Sai Nagar Colony, Kukatpally, Hyderabad, Telangana 500085.">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="employeeName">Employee Name</label>
+                    <input type="text" id="employeeName" value="Bibek Ghosh">
+                </div>
+                <div class="form-group">
+                    <label for="empNo">Employee Number</label>
+                    <input type="text" id="empNo" value="144">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="designation">Designation</label>
+                    <input type="text" id="designation" value="Full Stack Developer">
+                </div>
+                <div class="form-group">
+                    <label for="pfNumber">PF Number</label>
+                    <input type="text" id="pfNumber" value="-">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="uan">UAN</label>
+                    <input type="text" id="uan" value="-">
+                </div>
+                <div class="form-group">
+                    <label for="bankAccount">Bank Account No.</label>
+                    <input type="text" id="bankAccount" value="0195010362276">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pan">PAN</label>
+                    <input type="text" id="pan" value="DEKPG8459C">
+                </div>
+                <div class="form-group">
+                    <label for="doj">Date of Joining</label>
+                    <input type="text" id="doj" value="02/12/2024">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="workingDays">Total Working Days</label>
+                    <input type="text" id="workingDays" value="31">
+                </div>
+                <div class="form-group">
+                    <label for="daysWorked">Days Worked</label>
+                    <input type="text" id="daysWorked" value="30">
+                </div>
+            </div>
+            
+            <h3>Salary Details</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="netSalary">Net Salary (INR)</label>
+                    <input type="number" id="netSalary" value="25000" onchange="calculateSalaryBreakdown()">
+                </div>
+                <div class="form-group">
+                    <label for="earnedSalary">Earned Salary (INR)</label>
+                    <input type="number" id="earnedSalary" value="25000" onchange="calculateSalaryBreakdown()">
+                </div>
+            </div>
+            
+            <div class="salary-breakdown">
+                <div style="display: flex; gap: 40px;">
+                    <div style="flex: 1;">
+                        <h4>Salary Breakdown (Net Salary)</h4>
+                        <div class="breakdown-item">
+                            <span>Basic (50%):</span>
+                            <span id="basicAmount">₹11,666.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>HRA (25%):</span>
+                            <span id="hraAmount">₹5,833.25</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Conveyance Allowance (15%):</span>
+                            <span id="conveyanceAmount">₹3,499.95</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Medical Allowance (6%):</span>
+                            <span id="medicalAmount">₹1,399.98</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Special Allowance (4%):</span>
+                            <span id="specialAmount">₹933.32</span>
+                        </div>
+                        <div class="breakdown-item" style="font-weight: bold; margin-top: 5px;">
+                            <span>Total Gross Salary:</span>
+                            <span id="grossAmount">₹23,333.00</span>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>Earned Salary Breakdown</h4>
+                        <div class="breakdown-item">
+                            <span>Basic (50%):</span>
+                            <span id="earnedBasicAmount">₹11,666.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>HRA (25%):</span>
+                            <span id="earnedHraAmount">₹5,833.25</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Conveyance Allowance (15%):</span>
+                            <span id="earnedConveyanceAmount">₹3,499.95</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Medical Allowance (6%):</span>
+                            <span id="earnedMedicalAmount">₹1,399.98</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Special Allowance (4%):</span>
+                            <span id="earnedSpecialAmount">₹933.32</span>
+                        </div>
+                        <div class="breakdown-item" style="font-weight: bold; margin-top: 5px;">
+                            <span>Total Earned Salary:</span>
+                            <span id="earnedGrossAmount">₹23,333.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button id="generateBtn">Generate Pay Slip</button>
+                <button id="downloadBtn">Download as PDF</button>
+            </div>
+        </div>
+        
+        <div class="preview-container">
+            <div id="slipPreview">
+                <!-- Pay slip content will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            generateBtn.addEventListener('click', generatePaySlip);
+            downloadBtn.addEventListener('click', downloadPDF);
+            
+            // Calculate initial salary breakdown
+            calculateSalaryBreakdown();
+            
+            // Generate pay slip on page load
+            generatePaySlip();
+            
+            function calculateSalaryBreakdown() {
+                const netSalary = parseFloat(document.getElementById('netSalary').value) || 0;
+                const earnedSalary = parseFloat(document.getElementById('earnedSalary').value) || 0;
+                // Calculate components based on percentages
+                const basic = netSalary * 0.5;
+                const hra = netSalary * 0.25;
+                const conveyance = netSalary * 0.15;
+                const medical = netSalary * 0.06;
+                const special = netSalary * 0.04;
+                const earnedBasic = earnedSalary * 0.5;
+                const earnedHra = earnedSalary * 0.25;
+                const earnedConveyance = earnedSalary * 0.15;
+                const earnedMedical = earnedSalary * 0.06;
+                const earnedSpecial = earnedSalary * 0.04;
+                // Format currency values
+                const formatCurrency = (value) => {
+                    return '₹' + value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                };
+                // Update breakdown display
+                document.getElementById('basicAmount').textContent = formatCurrency(basic);
+                document.getElementById('hraAmount').textContent = formatCurrency(hra);
+                document.getElementById('conveyanceAmount').textContent = formatCurrency(conveyance);
+                document.getElementById('medicalAmount').textContent = formatCurrency(medical);
+                document.getElementById('specialAmount').textContent = formatCurrency(special);
+                document.getElementById('grossAmount').textContent = formatCurrency(netSalary);
+                document.getElementById('earnedBasicAmount').textContent = formatCurrency(earnedBasic);
+                document.getElementById('earnedHraAmount').textContent = formatCurrency(earnedHra);
+                document.getElementById('earnedConveyanceAmount').textContent = formatCurrency(earnedConveyance);
+                document.getElementById('earnedMedicalAmount').textContent = formatCurrency(earnedMedical);
+                document.getElementById('earnedSpecialAmount').textContent = formatCurrency(earnedSpecial);
+                document.getElementById('earnedGrossAmount').textContent = formatCurrency(earnedSalary);
+            }
+            
+            function generatePaySlip() {
+                // Update salary breakdown before generating pay slip
+                calculateSalaryBreakdown();
+                
+                // Get form values
+                const monthYear = document.getElementById('monthYear').value;
+                const companyName = document.getElementById('companyName').value;
+                const companyAddress = document.getElementById('companyAddress').value;
+                const employeeName = document.getElementById('employeeName').value;
+                const empNo = document.getElementById('empNo').value;
+                const designation = document.getElementById('designation').value;
+                const pfNumber = document.getElementById('pfNumber').value;
+                const uan = document.getElementById('uan').value;
+                const bankAccount = document.getElementById('bankAccount').value;
+                const pan = document.getElementById('pan').value;
+                const doj = document.getElementById('doj').value;
+                const workingDays = document.getElementById('workingDays').value;
+                const daysWorked = document.getElementById('daysWorked').value;
+                const netSalary = parseFloat(document.getElementById('netSalary').value);
+                const earnedSalary = parseFloat(document.getElementById('earnedSalary').value) || 0;
+                // Calculate salary components
+                const basic = netSalary * 0.5;
+                const hra = netSalary * 0.25;
+                const conveyance = netSalary * 0.15;
+                const medical = netSalary * 0.06;
+                const special = netSalary * 0.04;
+                const earnedBasic = earnedSalary * 0.5;
+                const earnedHra = earnedSalary * 0.25;
+                const earnedConveyance = earnedSalary * 0.15;
+                const earnedMedical = earnedSalary * 0.06;
+                const earnedSpecial = earnedSalary * 0.04;
+                // Format currency values
+                const formatCurrency = (value) => {
+                    return value.toFixed(2);
+                };
+                // Generate the pay slip HTML (exactly matching the provided structure)
+                const slipHTML = `
+                    <div class="slip-container">
+                        <div class="main-content">
+                        <div class="header">
+                            <div class="logo-container">
+                                <img class="logo-img" src="data:image/png;base64,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" alt="Company Logo">
+                            </div>
+                            <div class="company-name-address">
+                                <div class="company-details-title">
+                                    <p class="title-name">NAME OF THE COMPANY</p>
+                                    <p class="title-name">ADDRESS</p>
+                                </div>
+                                <div class="company-details">
+                                    <p class="company-name">${companyName}</p>
+                                    <p class="company-address">${companyAddress} </p>
+                                </div>
+                            </div>
+                            <h2 class="pay-slip-title">PAY SLIP FOR THE MONTH OF: '${monthYear}'</h2>
+                        </div>
+
+                        <table class="info-table">
+                            <tr>
+                                <td>NAME OF THE EMPLOYEE</td>
+                                <td>${employeeName}</td>
+                                <td>EMP No</td>
+                                <td>${empNo}</td>
+                            </tr>
+                            <tr>
+                                <td>DESIGNATION</td>
+                                <td>${designation}</td>
+                                <td>PF Number</td>
+                                <td>${pfNumber}</td>
+                            </tr>
+                            <tr>
+                                <td>UAN</td>
+                                <td>${uan}</td>
+                                <td>BANK A/c No:</td>
+                                <td>${bankAccount}</td>
+                            </tr>
+                            <tr>
+                                <td>EMPLOYEE PAN</td>
+                                <td>${pan}</td>
+                                <td>DATE OF JOINING</td>
+                                <td>${doj}</td>
+                            </tr>
+                            <tr>
+                                <td>TOTAL WORKING DAYS</td>
+                                <td>${workingDays}</td>
+                                <td>DAYS WORKED</td>
+                                <td>${daysWorked}</td>
+                            </tr>
+                        </table>
+
+                        <table class="salary-table">
+                            <tr>
+                                <th></th>
+                                <th>MASTERS (in INR)</th>
+                                <th>EARNED SALARY (in INR)</th>
+                                <th>DEDUCTIONS</th>
+                                <th>AMOUNT IN RS</th>
+                            </tr>
+                            <tr>
+                                <td>Basic Salary</td>
+                                <td class="right">${formatCurrency(basic)}</td>
+                                <td class="right">${formatCurrency(earnedBasic)}</td>
+                                <td>Reimbursement of Expenses</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>House Rent Allowance</td>
+                                <td class="right">${formatCurrency(hra)}</td>
+                                <td class="right">${formatCurrency(earnedHra)}</td>
+                                <td>Advance Recovered</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>Conveyance Allowances</td>
+                                <td class="right">${formatCurrency(conveyance)}</td>
+                                <td class="right">${formatCurrency(earnedConveyance)}</td>
+                                <td>Other Deductions</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>Medical Allowances</td>
+                                <td class="right">${formatCurrency(medical)}</td>
+                                <td class="right">${formatCurrency(earnedMedical)}</td>
+                                <td>Professional Tax</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>Special Allowances</td>
+                                <td class="right">${formatCurrency(special)}</td>
+                                <td class="right">${formatCurrency(earnedSpecial)}</td>
+                                <td>PF - Employee contribution</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>LTA</td>
+                                <td class="right">-</td>
+                                <td class="right">-</td>
+                                <td>ESI – Employee Contribution</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>Other Allowances</td>
+                                <td class="right">-</td>
+                                <td class="right">-</td>
+                                <td>Tax Deducted At Source</td>
+                                <td class="right">-</td>
+                            </tr>
+                            <tr>
+                                <td>Incentives</td>
+                                <td class="right">-</td>
+                                <td class="right">-</td>
+                                <td></td>
+                                <td class="right"></td>
+                            </tr>
+                            <tr>
+                                <td>Arrears of salary</td>
+                                <td class="right"></td>
+                                <td class="right"></td>
+                                <td></td>
+                                <td class="right"></td>
+                            </tr>
+                            <tr>
+                                <td>Quarterly Payout</td>
+                                <td class="right"></td>
+                                <td class="right"></td>
+                                <td></td>
+                                <td class="right"></td>
+                            </tr>
+                            <tr>
+                                <td>Annual Payout</td>
+                                <td class="right"></td>
+                                <td class="right"></td>
+                                <td></td>
+                                <td class="right"></td>
+                            </tr>
+                            <tr>
+                                <th>Gross Salary</th>
+                                <th class="right">${formatCurrency(netSalary)}</th>
+                                <th class="right">${formatCurrency(earnedSalary)}</th>
+                                <th>Total Deductions</th>
+                                <th class="right">-</th>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <th>Net Salary</th>
+                                <th class="right">${formatCurrency(earnedSalary)}</th>
+                            </tr>
+                        </table>
+
+                        <div class="footer">
+                            <p>With Regards</p>
+                            <p><strong>(HR / Payroll - Manager)</strong></p>
+                        </div>
+
+                        <div class="notice">
+                            <p><strong>NOTICE:</strong></p>
+                            <p>This message may contain privileged or otherwise confidential information. If you are not the intended recipient, please immediately advise the sender by reply by email and delete the message and any attachments without using, copying or disclosing the contents. (FE1)</p>
+                        </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Update the preview
+                document.getElementById('slipPreview').innerHTML = slipHTML;
+            }
+            
+            function downloadPDF() {
+                const { jsPDF } = window.jspdf;
+                
+                // Generate the pay slip first to ensure we have the latest data
+                generatePaySlip();
+                
+                // Get the pay slip element
+                const slipElement = document.getElementById('slipPreview');
+                
+                // Get employee name and month/year for filename
+                const employeeName = document.getElementById('employeeName').value.replace(/\s+/g, '_');
+                const monthYear = document.getElementById('monthYear').value.replace(/\s+/g, '_');
+                const fileName = `${employeeName}_${monthYear}_Pay_Slip.pdf`;
+                
+                // Use html2canvas to capture the content
+                html2canvas(slipElement, {
+                    scale: 4, // High resolution for best quality
+                    backgroundColor: '#fff', // Ensure white background
+                    useCORS: true,
+                    logging: false,
+                    imageSmoothingEnabled: false // Disable smoothing for crisp lines
+                }).then(canvas => {
+                    // Convert canvas to image data
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // Calculate PDF dimensions
+                    const imgWidth = 210; // A4 width in mm
+                    const pageHeight = 297; // A4 height in mm
+                    const imgHeight = canvas.height * imgWidth / canvas.width;
+                    
+                    // Create PDF
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                    // Add image to PDF
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                    
+                    // Download the PDF with dynamic filename
+                    pdf.save(fileName);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
