@@ -190,6 +190,7 @@
             
             <div class="btn-group">
                 <button id="generateBtn">Generate Pay Slip</button>
+                <button id="previewBtn">Live Preview PDF</button>
                 <button id="downloadBtn">Download as PDF</button>
             </div>
         </div>
@@ -199,18 +200,27 @@
                 <!-- Pay slip content will be generated here -->
             </div>
         </div>
+
+        <div class="preview-container">
+            <h3 style="margin-bottom: 10px;">PDF Live Preview</h3>
+            <iframe id="pdfPreviewFrame" title="PDF Live Preview" style="width: 100%; height: 720px; border: 1px solid #ddd; background: #fff;"></iframe>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const generateBtn = document.getElementById('generateBtn');
+            const previewBtn = document.getElementById('previewBtn');
             const downloadBtn = document.getElementById('downloadBtn');
+            const pdfPreviewFrame = document.getElementById('pdfPreviewFrame');
+            let activePdfPreviewUrl = null;
             
             const monthSelect = document.getElementById('monthSelect');
             const yearSelect = document.getElementById('yearSelect');
             
             generateBtn.addEventListener('click', generatePaySlip);
-            downloadBtn.addEventListener('click', downloadPDF);
+            previewBtn.addEventListener('click', () => downloadPDF({ previewOnly: true }));
+            downloadBtn.addEventListener('click', () => downloadPDF({ previewOnly: false }));
             
             // Calculate initial salary breakdown
             calculateSalaryBreakdown();
@@ -232,6 +242,13 @@
             
             // Initial call
             updateWorkingDays();
+
+            window.addEventListener('beforeunload', function() {
+                if (activePdfPreviewUrl) {
+                    URL.revokeObjectURL(activePdfPreviewUrl);
+                    activePdfPreviewUrl = null;
+                }
+            });
             
             function calculateSalaryBreakdown() {
                 const netSalary = parseFloat(document.getElementById('netSalary').value) || 0;
@@ -473,7 +490,7 @@
                 document.getElementById('slipPreview').innerHTML = slipHTML;
             }
             
-            async function downloadPDF() {
+            async function downloadPDF({ previewOnly = false } = {}) {
                 const { jsPDF } = window.jspdf;
 
                 // Generate the pay slip first to ensure latest values are used
@@ -488,8 +505,13 @@
                 const fileMonthYear = monthYear.replace(/\s+/g, '_');
                 const fileName = `${employeeName}_${fileMonthYear}_Pay_Slip.pdf`;
 
+                previewBtn.disabled = true;
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Generating...';
+                if (previewOnly) {
+                    previewBtn.textContent = 'Generating...';
+                } else {
+                    downloadBtn.textContent = 'Generating...';
+                }
 
                 try {
                     if (document.fonts && document.fonts.ready) {
@@ -508,10 +530,10 @@
                     const slipX = 15;
                     const slipY = 12;
                     const slipW = 180;
-                    const slipH = 273;
+                    const slipH = 215;
                     const contentX = slipX + 2;
                     const contentW = slipW - 4;
-                    let y = slipY + 3;
+                    let y = slipY + 5;
 
                     pdf.setDrawColor(0);
                     pdf.setLineWidth(0.1);
@@ -536,24 +558,24 @@
 
                     y += 10;
                     pdf.setFont('times', 'normal');
-                    pdf.setFontSize(8.25);
+                    pdf.setFontSize(9);
                     if (titleLabels[0]) pdf.text(titleLabels[0], labelX, y);
                     pdf.setFont('times', 'bold');
                     pdf.text(companyName, valueX, y);
 
-                    y += 6.2;
+                    y += 9;
                     pdf.setFont('times', 'normal');
                     if (titleLabels[1]) pdf.text(titleLabels[1], labelX, y);
                     const wrappedAddress = pdf.splitTextToSize(companyAddress, contentW - 50);
                     pdf.text(wrappedAddress, valueX, y);
-                    y += wrappedAddress.length * 3.8 + 2.2;
+                    y += wrappedAddress.length * 3.8 + 9.2;
 
                     pdf.setFont('times', 'bold');
                     pdf.setFontSize(9);
                     pdf.setFillColor(189, 211, 244);
-                    pdf.rect(contentX, y - 3.2, contentW, 5.3, 'F');
+                    pdf.rect(contentX, y - 3.2, contentW, 4.8, 'F');
                     pdf.text((slipElement.querySelector('.pay-slip-title')?.textContent || '').trim(), pageWidth / 2, y, { align: 'center' });
-                    y += 4.2;
+                    y += 7;
 
                     const mapRow = (row) => Array.from(row.cells).map((cell) => {
                         const isRight = cell.classList.contains('right');
@@ -584,16 +606,16 @@
                             valign: 'middle'
                         },
                         columnStyles: {
-                            0: { cellWidth: 49.3 },
+                            0: { cellWidth: 53.3 },
                             1: { cellWidth: 38.7 },
                             2: { cellWidth: 44.0 },
-                            3: { cellWidth: 44.0 }
+                            3: { cellWidth: 40.0 }
                         },
                         tableWidth: contentW,
                         margin: { left: contentX, right: pageWidth - (contentX + contentW) }
                     });
 
-                    y = pdf.lastAutoTable.finalY + 2;
+                    y = pdf.lastAutoTable.finalY + 6;
 
                     const salaryTable = slipElement.querySelector('.salary-table');
                     const salaryRows = Array.from(salaryTable.rows).map(mapRow);
@@ -619,11 +641,11 @@
                             textColor: [0, 0, 0]
                         },
                         columnStyles: {
-                            0: { cellWidth: 56 },
-                            1: { cellWidth: 25, halign: 'right' },
-                            2: { cellWidth: 32, halign: 'right' },
+                            0: { cellWidth: 40 },
+                            1: { cellWidth: 21, halign: 'center' },
+                            2: { cellWidth: 33 },
                             3: { cellWidth: 45 },
-                            4: { cellWidth: 18, halign: 'right' }
+                            4: { cellWidth: 37 }
                         },
                         tableWidth: contentW,
                         margin: { left: contentX, right: pageWidth - (contentX + contentW) },
@@ -635,43 +657,55 @@
                         }
                     });
 
-                    y = pdf.lastAutoTable.finalY + 5;
+                    y = pdf.lastAutoTable.finalY + 12;
 
                     pdf.setFont('times', 'normal');
                     pdf.setFontSize(9.75);
                     pdf.text((slipElement.querySelector('.footer p:first-child')?.textContent || 'With Regards').trim(), contentX + 1, y);
-                    y += 22;
+                    y += 25;
                     pdf.setFont('times', 'bold');
                     pdf.text((slipElement.querySelector('.footer p:last-child')?.textContent || '(HR / Payroll - Manager)').trim(), contentX + 1, y);
-                    y += 9;
+                    y += 14;
 
                     const noticeEl = slipElement.querySelector('.notice');
                     pdf.setFont('times', 'bold');
                     pdf.setFontSize(7.5);
                     const maxContentBottom = slipY + slipH - 2;
-                    const noticeBoxH = 18;
+                    const noticeBoxH = 14;
                     if (y + noticeBoxH > maxContentBottom) {
                         y = maxContentBottom - noticeBoxH;
                     }
                     pdf.setFillColor(249, 249, 249);
                     pdf.rect(contentX, y - 2.5, contentW, noticeBoxH, 'F');
-                    pdf.setLineWidth(0.6);
+                    pdf.setLineWidth(0.9);
                     pdf.setDrawColor(204, 204, 204);
                     pdf.line(contentX, y - 2.5, contentX, y - 2.5 + noticeBoxH);
                     pdf.setDrawColor(0, 0, 0);
                     pdf.setLineWidth(0.1);
-                    pdf.text('NOTICE:', contentX + 2, y + 1);
+                    pdf.text('NOTICE:', contentX + 3, y + 1);
                     pdf.setFont('times', 'normal');
                     const noticeText = (noticeEl?.textContent || '').replace(/\s+/g, ' ').trim().replace(/^NOTICE:\s*/i, '');
                     const wrappedNotice = pdf.splitTextToSize(noticeText, contentW - 4);
-                    pdf.text(wrappedNotice, contentX + 2, y + 4.1);
+                    pdf.text(wrappedNotice, contentX + 3, y + 4.1);
 
-                    pdf.save(fileName);
+                    if (previewOnly) {
+                        const pdfBlob = pdf.output('blob');
+                        if (activePdfPreviewUrl) {
+                            URL.revokeObjectURL(activePdfPreviewUrl);
+                        }
+                        activePdfPreviewUrl = URL.createObjectURL(pdfBlob);
+                        pdfPreviewFrame.src = activePdfPreviewUrl;
+                        pdfPreviewFrame.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        pdf.save(fileName);
+                    }
                 } catch (error) {
                     console.error('PDF generation failed:', error);
                     alert('Failed to generate PDF. Please try again.');
                 } finally {
+                    previewBtn.disabled = false;
                     downloadBtn.disabled = false;
+                    previewBtn.textContent = 'Live Preview PDF';
                     downloadBtn.textContent = 'Download as PDF';
                 }
             }
